@@ -8,6 +8,8 @@ import com.hamdan.slinkapi.entity.user.ApiUser;
 import com.hamdan.slinkapi.entity.user.User;
 import com.hamdan.slinkapi.service.LinkService;
 import com.hamdan.slinkapi.service.QrCodeService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import org.hibernate.validator.constraints.URL;
@@ -22,6 +24,7 @@ import org.springframework.web.bind.annotation.*;
 
 
 @RestController
+@Tag(name = "Links")
 public class LinkController {
 
     private final LinkService linkService;
@@ -34,16 +37,19 @@ public class LinkController {
     }
 
     @GetMapping("/qrcode")
+    @Operation(summary = "Este método converte uma URL em QrCode (Base64)")
     public ResponseEntity<String> toQrCode(@RequestParam("link") @Valid @URL String link, @RequestParam(name = "width", required = false) @Min(1) Integer width) {
         return ResponseEntity.ok(qrCodeService.generateQrCode(link, width));
     }
 
     @PostMapping
+    @Operation(summary = "Este método encurta uma URL (Base62 ou link customizado p/ usuários autenticados)")
     public ResponseEntity<SlinkResponseDto> shorten(@AuthenticationPrincipal User user, @RequestBody @Valid SlinkRequestDto req) {
         return ResponseEntity.ok(linkService.shorten(user, req));
     }
 
     @GetMapping("/{slink}")
+    @Operation(summary = "Este método traduz uma URL encurtada")
     public ResponseEntity<Void> resolve(@PathVariable String slink) {
         return ResponseEntity.status(HttpStatus.FOUND)
                 .header(HttpHeaders.LOCATION, linkService.resolve(slink))
@@ -52,6 +58,7 @@ public class LinkController {
 
     @GetMapping
     @PreAuthorize("hasRole('API_USER')")
+    @Operation(summary = "Este método devolve uma lista com as URLs de um usuário autenticado")
     public ResponseEntity<PaginationDto<SlinkDetailDto>> findAll(@AuthenticationPrincipal ApiUser apiUser, @PageableDefault(sort = {"id"}) Pageable pageable) {
         return ResponseEntity.ok(linkService.findAll(apiUser, pageable));
     }
