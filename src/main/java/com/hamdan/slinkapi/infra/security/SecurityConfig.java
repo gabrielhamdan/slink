@@ -3,6 +3,7 @@ package com.hamdan.slinkapi.infra.security;
 import com.hamdan.slinkapi.repository.ApiUserRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -22,7 +23,7 @@ import java.util.List;
 public class SecurityConfig {
 
     @Bean
-    public SecurityFilterChain doSecurityFilterChain(HttpSecurity http, ApiUserRepository apiUserRepository) throws Exception {
+    public SecurityFilterChain doSecurityFilterChain(HttpSecurity http, ApiUserRepository apiUserRepository, StringRedisTemplate redisTemplate) throws Exception {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
@@ -39,13 +40,13 @@ public class SecurityConfig {
                     req.requestMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**").permitAll();
                     req.anyRequest().authenticated();
                 })
-                .addFilterBefore(apiKeyFilter(apiUserRepository, getPwdEncoder()), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(apiKeyFilter(apiUserRepository, getPwdEncoder(), redisTemplate), UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
 
     @Bean
-    public ApiKeyFilter apiKeyFilter(ApiUserRepository apiUserRepository, PasswordEncoder passwordEncoder) {
-        return new ApiKeyFilter(apiUserRepository, passwordEncoder);
+    public ApiKeyFilter apiKeyFilter(ApiUserRepository apiUserRepository, PasswordEncoder passwordEncoder, StringRedisTemplate redisTemplate) {
+        return new ApiKeyFilter(apiUserRepository, passwordEncoder, redisTemplate);
     }
 
     @Bean
